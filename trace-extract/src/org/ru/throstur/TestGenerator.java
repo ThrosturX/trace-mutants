@@ -9,14 +9,17 @@ import java.util.HashMap;
 public class TestGenerator {
 
     private static HashMap<String, String> receive;
+    private static int uid = 0;
 
     static {
         receive = new HashMap<String, String>();
         receive.put("bus:CREATECONNECTION", "CreateConnection");
     }
 
+    // PRIVATE VARIABLES
     ArrayDeque<String> trace;
 
+    // CONSTRUCTOR
     public TestGenerator(ArrayDeque<String> trace) {
         this.trace = trace;
     }
@@ -58,7 +61,7 @@ public class TestGenerator {
         }
 
         spec.append("{\n\n")
-            .append("override def afterAll() = system.shutdown()")
+            .append("\toverride def afterAll() = system.shutdown()")
             .append("\n\n");
         // spec begin
 
@@ -67,14 +70,52 @@ public class TestGenerator {
         spec.append(traceTest());
 
         // end of spec
-        spec.append("}\n");
+        spec.append("\n}\n");
         return spec.toString();
     }
 
     private String traceTest() {
+        int uid = generateTestUID();
+        StringBuilder sb = new StringBuilder();
 
-        // TODO: Implement this
-        throw new UnsupportedOperationException("Method not implemented.");
+        sb.append("\t\"SUT\" should \"AUTO-GEN-TEST (");
+        sb.append(uid);
+        sb.append(")\"  in {\n");
+        sb.append("\n\tval actorRef = TestActorRef[Bus]\n");
+
+        sb.append(extractTrace(uid));
+
+        sb.append("\n");
+        sb.append("\t}");
+
+        return sb.toString();
+    }
+
+    private String extractTrace(int id) {
+        StringBuilder sb = new StringBuilder();
+
+        for (String msg : trace) {
+          sb.append(doReceive(msg, id));
+        }
+
+
+
+        return sb.toString();
+    }
+
+    private static String doReceive(String key, int uid) {
+        String value = receive.get(key);
+
+        if (value == null) {
+          return "//\tnull value in key: " + key + "\n";
+        }
+        StringBuilder sb = new StringBuilder();
+        sb.append("\tactorRef.receive(Bus.");
+        sb.append(receive.get(key));
+        sb.append("(");
+        sb.append(uid);
+        sb.append("))\n");
+        return sb.toString();
     }
 
     private static String header() {
@@ -89,11 +130,35 @@ public class TestGenerator {
 
         StringBuilder sb = new StringBuilder();
 
+        sb.append("// imports\n");
         for (String line : imports) {
-            sb.append("// imports\n");
             sb.append(line);
             sb.append('\n');
         }
         return sb.toString();
+    }
+
+    private synchronized static int generateTestUID() {
+        return uid++;
+    }
+
+  /**
+   * Unit test the TestGenerator
+   * @param args no args
+   */
+    public static void main(String[] args) {
+        ArrayDeque<String> traces = new ArrayDeque<String>();
+        String _trace = "cat:INITIAL-dog:INITIAL-dog:MEOW-cat:IDLE-cat:WOOF-";
+        for (String s : _trace.split("-")) {
+          traces.add(s);
+        }
+        receive = new HashMap<String, String>();
+        receive.put("cat:WOOF", "DestroyConnection");
+        receive.put("dog:MEOW", "CreateConnection");
+
+        TestGenerator tg = new TestGenerator(traces);
+
+        String spec = tg.generateTestCase("spec1");
+        System.out.println(spec);
     }
 }
