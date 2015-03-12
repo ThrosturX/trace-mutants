@@ -1,164 +1,280 @@
 package org.ru.throstur;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
+import java.util.*;
 
 /**
  * Created by throstur on 3/7/15.
  */
 public class TestGenerator {
 
-    private static HashMap<String, String> receive;
-    private static int uid = 0;
+  private static HashMap<String, String> receive;
+  private static HashMap<String, String> expect;
+  private static int uid = 0;
 
-    static {
-        receive = new HashMap<String, String>();
-        receive.put("bus:CREATECONNECTION", "CreateConnection");
+  static {
+    receive = new HashMap<String, String>();
+    receive.put("bus:CREATECONNECTION", "CreateConnection");
+    receive.put("bus:DESTROYCONNECTION", "DestroyConnection");
+    receive.put("bus:CONNECT", "Connect");
+    receive.put("bus:DISCONNECT", "Disconnect");
+    receive.put("bus:PUBLISH", "PublishSSS");
+    receive.put("bus:SUBSCRIBE", "Subscribe");
+    receive.put("bus:SUBSCRIBECALLBACK", "SubscribeCallback");
+    receive.put("bus:UNSUBSCRIBE", "Unsubscribe");
+    receive.put("bus:UNSUBSCRIBECALLBACK", "UnsubscribeCallback");
+    receive.put("bus:GETMESSAGE", "GetMessage");
+
+    expect = new HashMap<String, String>();
+    expect.put("att:ACK", "Success");
+    expect.put("att:FAIL", "Error");
+  }
+
+  // PRIVATE VARIABLES
+  List<ArrayDeque<String>> traces;
+
+  // CONSTRUCTOR
+  public TestGenerator(ArrayDeque<String> trace) {
+    traces = new ArrayList<ArrayDeque<String>>();
+    traces.add(trace);
+  }
+
+  public TestGenerator(ArrayList<ArrayDeque<String>> traces) {
+    this.traces = traces;
+  }
+
+
+  public boolean addTrace(ArrayDeque<String> trace) {
+    if (traces.contains(trace)) return false;
+    traces.add(trace);
+    return true;
+  }
+
+  public String generateTestCase(String name) {
+
+    if (traces.isEmpty()) {
+      throw new RuntimeException("no traces found!");
     }
 
-    // PRIVATE VARIABLES
-    ArrayDeque<String> trace;
+    StringBuilder sb = new StringBuilder();
 
-    // CONSTRUCTOR
-    public TestGenerator(ArrayDeque<String> trace) {
-        this.trace = trace;
+    sb.append(header());
+    sb.append(buildSpec(name));
+
+    return sb.toString();
+  }
+
+  private String buildSpec(String name) {
+    String[] withs = {"ImplicitSender"
+        , "FlatSpecLike"
+        , "Matchers"
+        , "BeforeAndAfterAll"
+    };
+
+    StringBuilder spec = new StringBuilder();
+
+    spec.append("class ")
+        .append(Character.toUpperCase(name.charAt(0)))
+        .append(name.substring(1))
+        .append(" extends TestKit(ActorSystem(\"")
+        .append(name.toLowerCase())
+        .append("-spec-test\")) ")
+    ;
+
+    for (String with : withs) {
+      spec.append("with ");
+      spec.append(with);
+      spec.append(' ');
     }
 
-    public String generateTestCase(String name) {
+    spec.append("{\n\n")
+        .append("\toverride def afterAll() = system.shutdown()")
+        .append("\n\n");
+    // spec begin
 
-        if (trace == null) {
-            throw new NullPointerException("trace is null!");
-        }
+    spec.append("");
 
-        StringBuilder sb = new StringBuilder();
+    spec.append(allTraceTest());
 
-        sb.append(header());
-        sb.append(buildSpec(name));
+    // end of spec
+    spec.append("\n}\n");
+    return spec.toString();
+  }
 
-        return sb.toString();
+  private String allTraceTest() {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < traces.size(); ++i) {
+      sb.append(traceTest(i));
     }
 
-    private String buildSpec(String name) {
-        String [] withs = { "ImplicitSender"
-                , "FlatSpecLike"
-                , "Matchers"
-                , "BeforeAndAfterAll"
-        };
+    return sb.toString();
+  }
 
-       StringBuilder spec = new StringBuilder();
+  private String traceTest(int uid) {
+//  int uid = generateTestUID();
+    StringBuilder sb = new StringBuilder();
 
-        spec.append("class ")
-            .append(Character.toUpperCase(name.charAt(0)))
-            .append(name.substring(1))
-            .append("extends(ActorSystem(\"")
-            .append(name.toLowerCase())
-            .append("-spec-test\")) ")
-            ;
+    sb.append("\n\t\"The System-under-test (");
+    sb.append(uid);
+    sb.append(")\" should \"AUTO-GEN-TEST (");
+    sb.append(uid);
+    sb.append(")\" in {\n");
+    sb.append("\t\tval actorRef = TestActorRef[Bus]\n\n");
 
-        for (String with : withs) {
-            spec.append("with ");
-            spec.append(with);
-        }
+    sb.append(extractTrace(uid));
 
-        spec.append("{\n\n")
-            .append("\toverride def afterAll() = system.shutdown()")
-            .append("\n\n");
-        // spec begin
+    sb.append("\n\t}\n");
 
-        spec.append("");
+    return sb.toString();
+  }
 
-        spec.append(traceTest());
+  private String extractTrace(int id) {
+    StringBuilder sb = new StringBuilder();
+    boolean started = false;
 
-        // end of spec
-        spec.append("\n}\n");
-        return spec.toString();
+    ArrayDeque<String> outgoing = new ArrayDeque<String>();
+    ArrayDeque<String> incoming = new ArrayDeque<String>();
+
+    for (String msg : traces.get(id)) {
+      String sausage = process(msg, id);
+      if (!started && sausage.contains("!"))
+        started = true;
+      else if (!started && sausage.contains("expect"))
+        continue;
+
+      sb.append(sausage);
+
+      if (sausage.contains("!")) {
+        outgoing.add(sausage);
+      } else if (sausage.contains("expect")) {
+        incoming.add(sausage);
+      }
     }
 
-    private String traceTest() {
-        int uid = generateTestUID();
-        StringBuilder sb = new StringBuilder();
+/// Strict input pair matching
+//  sb = new StringBuilder();
 
-        sb.append("\t\"SUT\" should \"AUTO-GEN-TEST (");
-        sb.append(uid);
-        sb.append(")\"  in {\n");
-        sb.append("\n\tval actorRef = TestActorRef[Bus]\n");
+//  for (int i=0; i<outgoing.size(); ++i) {
+//    if (i >= incoming.size()) {
+//      System.err.println("WARNING 1: outgoing/incoming mismatch " + outgoing.size() + " - " + incoming.size());
+//      break;
+//    }
+//    sb.append(outgoing.poll());
+//    sb.append(incoming.poll());
+//  }
 
-        sb.append(extractTrace(uid));
+    return sb.toString();
+  }
 
-        sb.append("\n");
-        sb.append("\t}");
-
-        return sb.toString();
+  private static String process(String message, int uid) {
+    String value = receive.get(message);
+    if (value != null) {
+      return doReceive(value, uid);
     }
 
-    private String extractTrace(int id) {
-        StringBuilder sb = new StringBuilder();
-
-        for (String msg : trace) {
-          sb.append(doReceive(msg, id));
-        }
-
-
-
-        return sb.toString();
+    value = expect.get(message);
+    if (value != null) {
+      return "\t\texpectMsg(Bus." + value + ")\n";
     }
 
-    private static String doReceive(String key, int uid) {
-        String value = receive.get(key);
+    return "";
+//      return "//\t process(): Nothing found in {receive, expect} about \"" + message +"\"\n";
+  }
 
-        if (value == null) {
-          return "//\tnull value in key: " + key + "\n";
-        }
-        StringBuilder sb = new StringBuilder();
-        sb.append("\tactorRef.receive(Bus.");
-        sb.append(receive.get(key));
-        sb.append("(");
-        sb.append(uid);
-        sb.append("))\n");
-        return sb.toString();
+  private static String doReceive(String message, int param) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("\t\tactorRef ! (Bus.");
+    sb.append(message.replace("SSS", ""));
+    sb.append("(");
+    sb.append(param);
+    if (message.endsWith("SSS")) {
+      sb.append(", \"foo\"");
     }
+    sb.append("))\n");
+    return sb.toString();
+  }
 
-    private static String header() {
-        String [] imports = { "collection.mutable.Stack"
-                , "scala.concurrent.duration._"
-                , "org.scalatest._"
-                , "akka.actor._"
-                , "akka.testkit._"
-                , "com.typesafe.config._"
-                , "org.ru.throstur.bus._"
-        };
+  private static String header() {
+    String[] imports = {
+        "scala.concurrent.duration._"
+        , "org.scalatest._"
+        , "akka.actor._"
+        , "akka.testkit._"
+        , "com.typesafe.config._"
+        , "org.ru.throstur.bus._"
+    };
 
-        StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder();
 
-        sb.append("// imports\n");
-        for (String line : imports) {
-            sb.append(line);
-            sb.append('\n');
-        }
-        return sb.toString();
+    sb.append("// imports\n");
+    for (String line : imports) {
+      sb.append("import ");
+      sb.append(line);
+      sb.append('\n');
     }
+    sb.append('\n');
+    return sb.toString();
+  }
 
-    private synchronized static int generateTestUID() {
-        return uid++;
-    }
+  private synchronized static int generateTestUID() {
+    return uid++;
+  }
 
   /**
    * Unit test the TestGenerator
-   * @param args no args
+   *
+   * @param args input trace file
    */
-    public static void main(String[] args) {
-        ArrayDeque<String> traces = new ArrayDeque<String>();
-        String _trace = "cat:INITIAL-dog:INITIAL-dog:MEOW-cat:IDLE-cat:WOOF-";
+  public static void main(String[] args) {
+    ArrayList<ArrayDeque<String>> traces = new ArrayList<ArrayDeque<String>>();
+    if (args.length == 0) {
+      String [] _traces = {
+          "cat:INITIAL-dog:INITIAL-dog:MEOW-cat:IDLE-cat:WOOF-"
+          , "cat:INITIAL-cat:IDLE-cat:WOOF-dog:MEOW-"
+      };
+
+      for (String _trace : _traces) {
+        ArrayDeque<String> t = new ArrayDeque<String>();
         for (String s : _trace.split("-")) {
-          traces.add(s);
+          t.add(s);
         }
-        receive = new HashMap<String, String>();
-        receive.put("cat:WOOF", "DestroyConnection");
-        receive.put("dog:MEOW", "CreateConnection");
-
-        TestGenerator tg = new TestGenerator(traces);
-
-        String spec = tg.generateTestCase("spec1");
-        System.out.println(spec);
+        traces.add(t);
+      }
+      receive = new HashMap<String, String>();
+      receive.put("cat:WOOF", "DestroyConnection");
+      receive.put("dog:MEOW", "CreateConnection");
+    } else {
+      FileInputStream fstream;
+      try {
+        boolean found = false;
+        fstream = new FileInputStream(args[0]);
+        BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+        String line = "";
+        line = br.readLine();
+        while (line != null)
+        {
+          ArrayDeque<String> trace = new ArrayDeque<String>();
+          for (String msg : line.split("-")) {
+            if (msg.contains("bus")) {
+              found = true;
+            }
+            if (found)
+              trace.add(msg);
+          }
+          line = br.readLine();
+          traces.add(trace);
+        }
+      } catch (Exception ex) {
+        System.err.println(ex.getMessage());
+        ex.printStackTrace();
+        return;
+      }
     }
+    TestGenerator tg = new TestGenerator(traces);
+
+    String spec = tg.generateTestCase("spec1");
+    System.out.println(spec);
+  }
 }
