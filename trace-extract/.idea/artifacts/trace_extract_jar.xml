@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="trace-extract:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/trace_extract_jar</output-path>
+    <root id="archive" name="trace-extract.jar">
+      <element id="module-output" name="trace-extract" />
+    </root>
+  </artifact>
+</component>
