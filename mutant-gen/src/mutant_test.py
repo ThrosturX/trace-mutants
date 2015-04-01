@@ -16,8 +16,7 @@ def enumerate_mutants(path, target):
             founds.append(root)
     return founds
 
-def env_setup(mutdirs, template, target):
-    basedir = 'testenvs'
+def env_setup(mutdirs, template, target, basedir):
     if os.path.exists(basedir):
         for thing in os.listdir(basedir):
             actual = os.path.join(basedir, thing)
@@ -58,51 +57,59 @@ def test_single_mutant(path):
     except subprocess.CalledProcessError, e:
         ret = e.returncode
 
-    os.chdir(cwd) # unnecessary?
-    resfile = '{0}_'.format(path.split()[1])
+    os.chdir(cwd)
+    resfile = os.path.join('testenvs', 'results', '{0}_'.format(os.path.split(path)[1]))
     if ret == 0:
         resfile += 'ALIVE'
     else:
         resfile += 'KILLED'
     print resfile
-    with open(resfile, 'a'):
-        os.utime(path, None)
+    open(resfile, 'a').close()
+    os.utime(resfile, None)
     return ret
 
-def test_mutants(muts):
+def test_mutants(muts, basedir):
     cwd = os.getcwd()
-    pool = Pool(4)
+    if not os.path.exists(os.path.join(basedir, 'results')):
+        os.makedirs(os.path.join(basedir, 'results')) # todo fix
+    pool = Pool(8)
     results = pool.map(test_single_mutant, muts)
     pool.close()
     pool.join()
-        
-#    for path in muts:
-#        os.chdir(path)
-#        try:
-#            cmd = ['sbt', 'test']
-##            output = subprocess.check_output(cmd)
-#            with open(os.devnull, 'w') as null:
-#                output = subprocess.check_call(cmd, stdout=os.devnull, stderr=os.devnull)
-#        except subprocess.CalledProcessError, e:
-##            output = e.output
-##            print e.output
-##            print 'NOTE: {1} Returned {0}'.format(e.returncode, e.cmd)
-#            output = e.returncode
-#        print '{0} returned {1}'.format(path, output)
-#        os.chdir(cwd)
+    result = count_results(os.path.join(basedir, 'results'))
+    return result;
+
+def count_results(path):
+    files = os.listdir(path)
+    killed = 0
+    alive = 0
+    for name in files:
+        if 'KILLED' in name:
+            killed += 1
+        else:
+            alive += 1
+
+    print 'KILLED {0}/{1} ({2} still alive)'.format(killed, killed + alive, alive)
+    return (killed, alive)
 
 def main(args):
+    basedir = 'testenvs'
     mutdirs = enumerate_mutants('mutants', args.target)
-    muts = env_setup(mutdirs, args.template, args.target)
-    test_mutants(muts)
+    muts = env_setup(mutdirs, args.template, args.target, basedir)
+    test_mutants(muts, basedir)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Evaluate mutants.')
     parser.add_argument('target')
     parser.add_argument('template')
+    parser.add_argument('--count_only', action='store_true', help='only count result (don\'t do testing)')
     args = parser.parse_args()
     try:
+        if args.count_only:
+            count_results(os.path.join('testenvs', 'results'))
+            exit(0)
         main(args)
+
     except KeyboardInterrupt, e:
         exit()
     except:
