@@ -274,7 +274,7 @@ public class TestGenerator {
     }
     TestGenerator tg = new TestGenerator(traces);
 
-    String spec = tg.generateTestCase("spec1");
+    String spec = tg.generateTestCase(args.length >= 2 ? args[1] : "spec1");
     System.out.println(spec);
   }
 }
