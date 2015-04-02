@@ -1,8 +1,6 @@
 package org.ru.throstur;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -121,7 +119,7 @@ public class TestGenerator {
     sb.append(")\" should \"AUTO-GEN-TEST (");
     sb.append(uid);
     sb.append(")\" in {\n");
-    sb.append("\t\tval actorRef = TestActorRef[Bus]\n\n");
+    sb.append("\t\tval actorRef = TestActorRef[JBus]\n\n");
 
     sb.append(extractTrace(uid));
 
@@ -176,7 +174,7 @@ public class TestGenerator {
 
     value = expect.get(message);
     if (value != null) {
-      return "\t\texpectMsg(Bus." + value + ")\n";
+      return "\t\texpectMsg(new JBus." + value + "())\n";
     }
 
     return "";
@@ -185,7 +183,7 @@ public class TestGenerator {
 
   private static String doReceive(String message, int param) {
     StringBuilder sb = new StringBuilder();
-    sb.append("\t\tactorRef ! (Bus.");
+    sb.append("\t\tactorRef ! (new JBus.");
     sb.append(message.replace("SSS", ""));
     sb.append("(");
     sb.append(param);
@@ -272,9 +270,47 @@ public class TestGenerator {
         return;
       }
     }
-    TestGenerator tg = new TestGenerator(traces);
+//    TestGenerator tg = new TestGenerator(traces);
 
-    String spec = tg.generateTestCase(args.length >= 2 ? args[1] : "spec1");
-    System.out.println(spec);
+//    String spec = tg.generateTestCase(args.length >= 2 ? args[1] : "spec1");
+//    System.out.println(spec);
+
+    String specName = args.length >= 2 ? args[1] : "spec";
+
+    int processed = 0;
+    int total = traces.size();
+    int batchSize = args.length >= 3 ? Integer.parseInt(args[2]) : 50;
+    String fName;
+    Writer writer;
+
+    TestGenerator tg;
+
+    while (processed < total) {
+        try {
+          fName = specName + Integer.toString(processed) + ".scala";
+//          writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fName)));
+          writer = new FileWriter(new File(fName));
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          System.err.println(ex.getMessage());
+          return;
+        }
+      ArrayList<ArrayDeque<String>> traceHolder = new ArrayList<ArrayDeque<String>>();
+      for (int i = 0; i < batchSize; ++i) {
+        traceHolder.add(traces.remove(0));
+      }
+      tg = new TestGenerator(traceHolder);
+      try {
+        writer.write(tg.generateTestCase(specName + Integer.toString(processed)));
+        writer.close();
+      } catch (IOException e) {
+        System.err.println("UNABLE TO WRITE TEST CASES! (p=" + processed + ")");
+        e.printStackTrace();
+        System.err.println(e.getMessage());
+      }
+      processed += batchSize;
+    }
+
+
   }
 }
