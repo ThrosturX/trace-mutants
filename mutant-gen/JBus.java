@@ -157,16 +157,16 @@ public class JBus extends UntypedActor {
 			subscribed = true;
 			getSender().tell(new Success(), getSelf());
 		} else if (message instanceof SubscribeCallback
-				&& connected && callbacks< 10) {
+				&& connected && callbacks < 10) {
 			callbacks += 1;
 			getSender().tell(new Success(), getSelf());
 		} else if (message instanceof Unsubscribe
 				&& connected && (subscribed || callbacks > 0)) {
 			subscribed = false;
-			callbacks -= 1;
+			callbacks = 0; // possibly differs from model
 			getSender().tell(new Success(), getSelf());
 		} else if (message instanceof UnsubscribeCallback
-				&& connected && (subscribed || callbacks > 0)) {
+				&& connected && (callbacks > 0)) {
 			callbacks -=1 ;
 			getSender().tell(new Success(), getSelf());
 		} else if (message instanceof Publish

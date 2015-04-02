@@ -2,7 +2,8 @@ import argparse
 import os
 import shutil
 import subprocess
-from multiprocessing import Pool
+import sys
+from multiprocessing.dummy import Pool
 
 def find_file(name, path):
     for root, dirs, files in os.walk(path):
@@ -46,18 +47,18 @@ def env_setup(mutdirs, template, target, basedir):
 
 def test_single_mutant(path):
     cwd = os.getcwd()
-    os.chdir(path)
+#    os.chdir(path)
 
     logfile = 'log.txt'
 
     cmd = ['sbt', 'test']
     try:
         with open(logfile, 'w') as log:
-            ret = subprocess.check_call(cmd, stdout=log, stderr=log)
+            ret = subprocess.check_call(cmd, stdout=log, stderr=log, cwd=path)
     except subprocess.CalledProcessError, e:
         ret = e.returncode
 
-    os.chdir(cwd)
+#    os.chdir(cwd)
     resfile = os.path.join('testenvs', 'results', '{0}_'.format(os.path.split(path)[1]))
     if ret == 0:
         resfile += 'ALIVE'
@@ -72,7 +73,7 @@ def test_mutants(muts, basedir):
     cwd = os.getcwd()
     if not os.path.exists(os.path.join(basedir, 'results')):
         os.makedirs(os.path.join(basedir, 'results')) # todo fix
-    pool = Pool(8)
+    pool = Pool()
     results = pool.map(test_single_mutant, muts)
     pool.close()
     pool.join()
@@ -92,6 +93,25 @@ def count_results(path):
     print 'KILLED {0}/{1} ({2} still alive)'.format(killed, killed + alive, alive)
     return (killed, alive)
 
+def test_original(template, target):
+    odir = os.path.join('testenvs', 'original')
+    try:
+        if os.path.exists(odir):
+            raw_input('remove {0}?'.format(odir))
+            try:
+                if os.path.isfile(odir):
+                    os.unlink(odir)
+                elif os.path.isdir(odir):
+                    shutil.rmtree(odir)
+            except Exception, e:
+                print e
+        shutil.copytree(template, odir)
+        shutil.copyfile(target, os.path.join(odir, target))
+    except:
+        print 'Unexpected error: ', sys.exc_info()[0]
+        raise
+    test_single_mutant(odir)
+
 def main(args):
     basedir = 'testenvs'
     mutdirs = enumerate_mutants('mutants', args.target)
@@ -100,13 +120,17 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Evaluate mutants.')
-    parser.add_argument('target')
-    parser.add_argument('template')
+    parser.add_argument('target', nargs='?', default='JBus.java')
+    parser.add_argument('template', nargs='?', default='sbt')
     parser.add_argument('--count_only', action='store_true', help='only count result (don\'t do testing)')
+    parser.add_argument('--original', action='store_true', help='only test the original (not the mutants)')
     args = parser.parse_args()
     try:
         if args.count_only:
             count_results(os.path.join('testenvs', 'results'))
+            exit(0)
+        if args.original:
+            test_original(args.template, args.target)
             exit(0)
         main(args)
 
