@@ -201,7 +201,7 @@ public class TestGenerator {
         , "akka.actor._"
         , "akka.testkit._"
         , "com.typesafe.config._"
-        , "org.ru.throstur.bus._"
+//      , "org.ru.throstur.bus._"
     };
 
     StringBuilder sb = new StringBuilder();
