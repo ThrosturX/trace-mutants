@@ -49,7 +49,7 @@ def test_single_mutant(path):
     cwd = os.getcwd()
 #    os.chdir(path)
 
-    logfile = 'log.txt'
+    logfile = os.path.join(path, 'log.txt')
 
     cmd = ['sbt', 'test']
     try:
@@ -110,7 +110,7 @@ def test_original(template, target):
     except:
         print 'Unexpected error: ', sys.exc_info()[0]
         raise
-    test_single_mutant(odir)
+    return test_single_mutant(odir)
 
 def main(args):
     basedir = 'testenvs'
@@ -119,7 +119,7 @@ def main(args):
     test_mutants(muts, basedir)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Evaluate mutants.')
+    parser = argparse.ArgumentParser(description='Evaluate mutants with sbt and the file system.')
     parser.add_argument('target', nargs='?', default='JBus.java')
     parser.add_argument('template', nargs='?', default='sbt')
     parser.add_argument('--count_only', action='store_true', help='only count result (don\'t do testing)')
@@ -130,8 +130,8 @@ if __name__ == '__main__':
             count_results(os.path.join('testenvs', 'results'))
             exit(0)
         if args.original:
-            test_original(args.template, args.target)
-            exit(0)
+            res = test_original(args.template, args.target)
+            exit(res)
         main(args)
 
     except KeyboardInterrupt, e:
