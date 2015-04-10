@@ -1,0 +1,32 @@
+#!bin/bash/
+
+# Change the following variables to ensure the classpath is exported correctly
+DIR1=$(pwd)
+LIB="$DIR1/lib"
+TOOLS_JAR="/usr/lib/jvm/java-8-jdk/lib/tools.jar"
+#IVY2_CACHE="/home/throstur/.ivy2/cache"
+
+required=(
+	$TOOLS_JAR
+	$DIR1/mujava.jar
+	$DIR1/commons-io-2.4.jar
+	$DIR1/openjava.jar
+	$DIR1/junit.jar
+	$DIR1/hamcrest-core.jar
+	$DIR1/akka.jar
+	$LIB/scala-library-2.11.5.jar
+	$LIB/akka_actor_2.11-2.3.9.jar
+	$LIB/config-1-2-1.jar
+)
+
+for jar in "${required[@]}"; do
+	if [[ :$CLASSPATH: != *:"$jar":* ]]; then
+		echo "adding $jar to CLASSPATH"
+		cp += ":$jar"
+	fi
+done
+
+export CLASSPATH="$CLASSPATH:$cp"
+
+# export CLASSPATH="$CLASSPATH:$TOOLS_JAR:$DIR1/mujava.jar:$DIR1/commons-io-2.4.jar:$DIR1/openjava.jar:$DIR1/junit.jar:$DIR1/hamcrest-core.jar:$DIR1/akka.jar:$LIB/scala-library-2.11.5.jar:$LIB/akka-actor_2.11-2.3.9.jar:$LIB/config-1.2.1.jar"
+
