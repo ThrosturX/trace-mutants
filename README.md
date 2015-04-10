@@ -1,6 +1,6 @@
 # `trace-mutants`
 
-This repository contains two packages, `trace-extract` and `mutant-gen`.
+This repository contains two packages, `trace-extract` and `evaluate-mutants`.
 The former concerns extracting traces from a state space and generating test cases 
 whereas the latter is a test-bed to evaluate whether or not mutants are being killed, given the supplied traces.
 
@@ -23,9 +23,9 @@ If no spec or batch size parameters are supplied, they default to "spec" and 50.
 The batch size limits the amount of test cases per spec file, 
 so if there are 1000 traces and batch size is 100, then 10 spec files are created.
 
-## `mutant-gen`
+## `evaluate-mutants`
 
-The `mutant-gen` package is a simple framework for evaluating mutants.
+The `evaluate-mutants` package is a simple framework for evaluating mutants.
 It contains a `python 2` script that uses `sbt` and the filesystem to test each mutant and manage things.
 Dependencies: `sbt` (simple build tool), `java`, `python 2`.
 See `run.sh` and `src/mutant_test.py [--help]` for more information.
