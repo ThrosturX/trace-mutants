@@ -1,8 +1,9 @@
 # `trace-mutants`
 
-This repository contains two packages, `trace-extract` and `evaluate-mutants`.
-The former concerns extracting traces from a state space and generating test cases 
-whereas the latter is a test-bed to evaluate whether or not mutants are being killed, given the supplied traces.
+This repository contains three packages, `trace-extract`, `gen-mutants` and `evaluate-mutants`.
+The `trace-extract` package concerns extracting traces from a state space and generating test cases.
+`gen-mutants` should include everything needed to generate `JBus.java` mutants from muJava.
+`evaluate-mutants` is a test-bed to evaluate whether or not mutants are being killed, given the supplied traces.
 
 ## `trace-extract`
 
@@ -22,6 +23,11 @@ The second and third parameters are optional and represent spec name and batch s
 If no spec or batch size parameters are supplied, they default to "spec" and 50.
 The batch size limits the amount of test cases per spec file, 
 so if there are 1000 traces and batch size is 100, then 10 spec files are created.
+
+## `gen-mutants`
+
+The `gen-mutants` package contains the necessary files to generate mutants for `JBus.java`. 
+Simply run `run.sh`. It should generate at least 300 mutants and zip their sources into `mutants.tar`.
 
 ## `evaluate-mutants`
 

@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{xspace}
+\usepackage{booktabs}
+\usepackage[margin=3cm]{geometry}
+\usepackage[section]{placeins}
+\setlength{\parskip}{1em}
+
+\bibliographystyle{plainnat}
+
+\begin{document}
+
+% document-specific command declarations
+\newcommand{\Rebeca}{$\mathcal{R}$ebeca\xspace}
+
+\title{Heuristics for generating abstract test cases from \Rebeca model}
+\author{Þröstur Thorarensen (throstur11@ru.is)}
+\date{\today}
+\maketitle
+
+\begin{abstract}
+%TODO
+	TODO: abstract
+%TODO
+\end{abstract}
+
+\section{Introduction}
+	A model describing a System Under Test (SUT) is usually an abstract, partial presentation of the SUT's desired behavior. Model-based testing is using such a model of the SUT to generate abstract test cases and then mapping those abstract test cases to executable test cases based on the back-end code. Test cases derived from such a model are at the same level of abstraction as the model. An abstract test case cannot be directly executed against a SUT and an executable test suite needs to be derived from a corresponding abstract test suite.
+
+	Mutation testing is used to design new software tests and evaluate the quality of existing software tests. It involves creating \textit{mutants} modified versions of the SUT that are based on \textit{mutation operators}. This study uses the muJava \citep{mujava} mutation system to generate mutants.
+
+	% MAYBE TODO HERE ^ more on mutants
+
+	Since we cannot test software with all imputs, coverage criteria are used to decide which test inputs to use. The software testing community believes that effective use of coverage criteria makes it more likely that test engineers will find faults in a program and provides informal assurance that the software is of high qualityand reliability. In this study, random traces were extracted from the state space of the model to be used as the coverage criteria.
+
+	% TODO: Rebeca intro?
+
+	This report documents the process of generating abstract test cases from a \Rebeca model, . . . %TODO%
+
+
+\section{Method}
+
+	\subsection{Modeling the System Under Test}
+	The case study intended as the SUT is the NASA GMSEC Message Bus, the specification of which was provided by \citeauthor{fraunhofer}. The model of the system was implemented as a \texttt{reactiveclass} in \Rebeca. Simply modeling the SUT as a \texttt{reactiveclass} was not sufficient for our purposes \-- the system is reactive and as such requires inputs from external entities to avoid idling. For this reason, a \texttt{reactiveclass} modeling a user of the SUT was implemented, non-deterministically sending messages to the SUT. To avoid a combinatorial explosion in generating the state space, the amount of messages sent must have a reasonably low upper bound \-- 20 was selected for this study.
+
+	\subsection{Coverage Criteria}
+	Due to temporal constraints on the study, the coverage criteria for the generated test cases was set at 1000 random traces extracted from the state space of the model, in which only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation).
+
+	\subsection{Trace Extraction}
+
+
+	\subsection{Mapping Traces to Test Cases}
+
+
+	\subsection{Mutant Generation}
+
+
+	\subsection{Testing mutants}
+		
+
+\section{Results}
+	Oh Noes!
+
+\section{Discussion}
+	Bar!
+
+\section{Conclusion}
+	Foo!
+
+\bibliography{references}
+
+\end{document}
