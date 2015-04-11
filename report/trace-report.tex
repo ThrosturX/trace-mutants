@@ -47,19 +47,27 @@
 	\subsection{Modeling the System Under Test}
 	The case study intended as the SUT is the NASA GMSEC Message Bus, the specification of which was provided by \citeauthor{fraunhofer}. The model of the system was implemented as a \texttt{reactiveclass} in \Rebeca. Simply modeling the SUT as a \texttt{reactiveclass} was not sufficient for our purposes \-- the system is reactive and as such requires inputs from external entities to avoid idling. For this reason, a \texttt{reactiveclass} modeling a user of the SUT was implemented, non-deterministically sending messages to the SUT. To avoid a combinatorial explosion in generating the state space, the amount of messages sent must have a reasonably low upper bound \-- 20 was selected for this study.
 
+	It should be noted that an actual implementation of the SUT was not used in this study. Instead, the model was re-implemented as a Java class following the specification of the system. This was done for a few reasons, notably giving control over used frameworks to the researchers and to double-check that the model is faithful to the specification. The SUT implementation was implemented as a Akka Java actor, as the Akka Testkit framework provides excellent tools to test actor based systems.
+
 	\subsection{Coverage Criteria}
-	Due to temporal constraints on the study, the coverage criteria for the generated test cases was set at 1000 random traces extracted from the state space of the model, in which only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation).
+	Due to temporal constraints on the study, the coverage criteria for the generated test cases was set at 1000 random traces extracted from the state space of the model, in which only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation). The state space of the model was exported from Afra (\Rebeca IDE) as an \texttt{.aut} file suitable for visualization with software such as GraphViz.
 
-	\subsection{Trace Extraction}
+	\subsection{Generating Test Cases}
+	\subsubsection{Abstract Test Cases}
+	Random traces were extracted from the state space. The traces act as abstract test cases for the SUT, as the behavior of an actor based model to an outside observer can be fully modeled based only on the messages that are being sent between actors.
+
+	In order to extract individual traces from the \Rebeca model, we implemented simple Java software to create a graph of the state space based on an \texttt{.aut} file as input, with the output being a list of traces through the graph. Branching decisions in the state space were made at random. The traces extracted from the state space are then used as abstract test cases.
+	The code can be found in the \texttt{trace-extract} package of the \texttt{trace-mutants} GitHub repository. \nocite{trace-mutants}
 
 
-	\subsection{Mapping Traces to Test Cases}
-
+	\subsubsection{Concrete Test cases}
+	The \texttt{trace-extract} package also includes a Java class for transforming the abstract test cases to concrete test cases. The \texttt{TestGenerator} class generates a Scala test spec for the Akka Testkit framework\footnote{The \texttt{TestGenerator} class hard-codes the messages that should be sent and received by the SUT as a result of fast prototyping, but the code is available on GitHub}. 
 
 	\subsection{Mutant Generation}
-
+	Mutants were generated using the muJava \citet{mujava} mutation system for Java programs. Some slight modifications were made to the source code of muJava to facilitate mutant compilation.The artifacts of the modifications are available in the \texttt{gen-mutants} package of the \texttt{trace-mutants} GitHub repository.
 
 	\subsection{Testing mutants}
+	\label{ref:method_testing}
 		
 
 \section{Results}
