@@ -20,7 +20,7 @@ The resulting traces are printed out in a `.traces` file of the same name as the
 
 `TestGenerator.java` accepts a `.traces` file as a first parameter.
 The second and third parameters are optional and represent spec name and batch size.
-If no spec or batch size parameters are supplied, they default to "spec" and 50.
+If no spec or batch size parameters are supplied, they default to `"spec"` and 50.
 The batch size limits the amount of test cases per spec file, 
 so if there are 1000 traces and batch size is 100, then 10 spec files are created.
 
@@ -28,10 +28,11 @@ so if there are 1000 traces and batch size is 100, then 10 spec files are create
 
 The `gen-mutants` package contains the necessary files to generate mutants for `JBus.java`. 
 Simply run `run.sh`. It should generate at least 300 mutants and zip their sources into `mutants.tar`.
+`setclasspath.source` may need to be modified to include `tools.jar` (unless `tools.jar` is already in the `CLASSPATH`).
 
 ## `evaluate-mutants`
 
 The `evaluate-mutants` package is a simple framework for evaluating mutants.
 It contains a `python 2` script that uses `sbt` and the filesystem to test each mutant and manage things.
-Dependencies: `sbt` (simple build tool), `java`, `python 2`.
+Dependencies: `sbt` (simple build tool), `java`, `python 2.7`.
 See `run.sh` and `src/mutant_test.py [--help]` for more information.
