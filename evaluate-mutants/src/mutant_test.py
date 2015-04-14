@@ -50,7 +50,6 @@ def test_single_mutant(path):
 #    os.chdir(path)
 
     logfile = os.path.join(path, 'log.txt')
-    print path
 
     cmd = ['test_mutant.sh', path]
     try:
@@ -109,7 +108,7 @@ def test_original(template, target):
             except Exception, e:
                 print e
         shutil.copytree(template, odir)
-        shutil.copyfile(target, os.path.join(odir, target))
+        shutil.copyfile(target, os.path.join(odir, "src/main/java", target))
     except:
         print 'Unexpected error: ', sys.exc_info()[0]
         raise
