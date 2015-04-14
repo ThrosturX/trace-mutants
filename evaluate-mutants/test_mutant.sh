@@ -13,10 +13,9 @@ mkdir -p $outdir
 
 # scala paths
 sdir="scala/bin"
-jdir="java/bin"
 
 # compile the mutant
-$jdir/javac -cp "$jcp" "$1/src/main/java/JBus.java" -d $outdir || exit 2
+javac -cp "$jcp" "$1/src/main/java/JBus.java" -d $outdir || exit 2
 
 shopt -s failglob
 for filename in $1/src/test/scala/*.scala; do
