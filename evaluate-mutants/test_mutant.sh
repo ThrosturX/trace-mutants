@@ -13,9 +13,10 @@ mkdir -p $outdir
 
 # compiler paths
 sdir="scala/bin"
+jdir="java"
 
 # compile the mutant
-javac -cp "$jcp" "$1/src/main/java/JBus.java" || exit 2
+$jdir/javac -cp "$jcp" "$1/src/main/java/JBus.java" || exit 2
 
 shopt -s nullglob
 for filename in $1/src/test/scala/*.scala; do
