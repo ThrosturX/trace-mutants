@@ -6,6 +6,8 @@
 \usepackage{natbib}
 \usepackage{xspace}
 \usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{verbatim}
 \usepackage[margin=3cm]{geometry}
 \usepackage[section]{placeins}
 \setlength{\parskip}{1em}
@@ -23,61 +25,100 @@
 \maketitle
 
 \begin{abstract}
-%TODO
-	TODO: abstract
-%TODO
+	Software testing can be a difficult task for humans and is a prime candidate for automation.Concurrent systems are no exception, even when employing paradigms such as the Actor model. Model checking goes a long way to verifying software correctness, but models always abstract away from the implementation. Mutant testing is a promising method to pinpoint programming errors, by combining the abstract model of a system with mutants of the implementation, it is possible to automatically generate an extensive suite of test cases with ease. The research demonstrates that software testing can easily be supplemented by automation and that even the simplistic methods employed in this study are capable of producing reliable results.
 \end{abstract}
 
-\section{Introduction}
-	A model describing a System Under Test (SUT) is usually an abstract, partial presentation of the SUT's desired behavior. Model-based testing is using such a model of the SUT to generate abstract test cases and then mapping those abstract test cases to executable test cases based on the back-end code. Test cases derived from such a model are at the same level of abstraction as the model. An abstract test case cannot be directly executed against a SUT and an executable test suite needs to be derived from a corresponding abstract test suite.
+\newpage
+\tableofcontents
+\newpage
 
-	Mutation testing is used to design new software tests and evaluate the quality of existing software tests. It involves creating \textit{mutants} modified versions of the SUT that are based on \textit{mutation operators}. This study uses the muJava \citep{mujava} mutation system to generate mutants.
+	\section{Introduction}
+		A model describing a System Under Test (SUT) is usually an abstract, partial presentation of the SUT's desired behavior. Model-based testing is using such a model of the SUT to generate abstract test cases and then mapping those abstract test cases to executable test cases based on the back-end code. Test cases derived from such a model are at the same level of abstraction as the model. An abstract test case cannot be directly executed against a SUT and an executable test suite needs to be derived from a corresponding abstract test suite.
 
-	% MAYBE TODO HERE ^ more on mutants
+		Model checking is a method of formally verifying finite-state concurrent systems according to a given specification. The specification is generally expressed as temporal logic formulas which are verified either with explicit-state model checking or symbolic model checking. Symbolic model checking is more efficient states can be represented as sets of states rather than as single states.
 
-	Since we cannot test software with all imputs, coverage criteria are used to decide which test inputs to use. The software testing community believes that effective use of coverage criteria makes it more likely that test engineers will find faults in a program and provides informal assurance that the software is of high qualityand reliability. In this study, random traces were extracted from the state space of the model to be used as the coverage criteria.
+		\Rebeca is an actor-based modeling language designed in an effort to bridge the gap between formal verification approaches and real applications. \Rebeca introduces the ability to analyze a group of reactive objects as single components of a system in the actor model.
 
-	% TODO: Rebeca intro?
+		Since we cannot test software with all inputs, \textbf{coverage criteria} are used to decide which test inputs to use. The software testing community believes that effective use of coverage criteria makes it more likely that test engineers will find faults in a program and provides informal assurance that the software is of high qualityand reliability. 
 
-	This report documents the process of generating abstract test cases from a \Rebeca model, . . . %TODO%
-
-
-\section{Method}
-
-	\subsection{Modeling the System Under Test}
-	The case study intended as the SUT is the NASA GMSEC Message Bus, the specification of which was provided by \citeauthor{fraunhofer}. The model of the system was implemented as a \texttt{reactiveclass} in \Rebeca. Simply modeling the SUT as a \texttt{reactiveclass} was not sufficient for our purposes \-- the system is reactive and as such requires inputs from external entities to avoid idling. For this reason, a \texttt{reactiveclass} modeling a user of the SUT was implemented, non-deterministically sending messages to the SUT. To avoid a combinatorial explosion in generating the state space, the amount of messages sent must have a reasonably low upper bound \-- 20 was selected for this study.
-
-	It should be noted that an actual implementation of the SUT was not used in this study. Instead, the model was re-implemented as a Java class following the specification of the system. This was done for a few reasons, notably giving control over used frameworks to the researchers and to double-check that the model is faithful to the specification. The SUT implementation was implemented as a Akka Java actor, as the Akka Testkit framework provides excellent tools to test actor based systems.
-
-	\subsection{Coverage Criteria}
-	Due to temporal constraints on the study, the coverage criteria for the generated test cases was set at 1000 random traces extracted from the state space of the model, in which only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation). The state space of the model was exported from Afra (\Rebeca IDE) as an \texttt{.aut} file suitable for visualization with software such as GraphViz.
-
-	\subsection{Generating Test Cases}
-	\subsubsection{Abstract Test Cases}
-	Random traces were extracted from the state space. The traces act as abstract test cases for the SUT, as the behavior of an actor based model to an outside observer can be fully modeled based only on the messages that are being sent between actors.
-
-	In order to extract individual traces from the \Rebeca model, we implemented simple Java software to create a graph of the state space based on an \texttt{.aut} file as input, with the output being a list of traces through the graph. Branching decisions in the state space were made at random. The traces extracted from the state space are then used as abstract test cases.
-	The code can be found in the \texttt{trace-extract} package of the \texttt{trace-mutants} GitHub repository. \nocite{trace-mutants}
+		Mutation testing is used to design new software tests and evaluate the quality of existing software tests. It involves creating \textit{mutants} modified versions of the SUT that are based on \textit{mutation operators}. Each mutant $m \in M$ where $M$ is the set of mutants for a given artifact will lead to a test requirement\footnote{Criterion 5.32 on Mutation Coverage} and yields more test requirements than any other test criterion in most situations (provided that the mutation operators are well-designed). In practise, if software contains a fault, there will usually be a set of mutantns that can only be killed by a test case that also detects that fault \citep{ammann2008introduction}.
 
 
-	\subsubsection{Concrete Test cases}
-	The \texttt{trace-extract} package also includes a Java class for transforming the abstract test cases to concrete test cases. The \texttt{TestGenerator} class generates a Scala test spec for the Akka Testkit framework\footnote{The \texttt{TestGenerator} class hard-codes the messages that should be sent and received by the SUT as a result of fast prototyping, but the code is available on GitHub}. 
 
-	\subsection{Mutant Generation}
-	Mutants were generated using the muJava \citet{mujava} mutation system for Java programs. Some slight modifications were made to the source code of muJava to facilitate mutant compilation.The artifacts of the modifications are available in the \texttt{gen-mutants} package of the \texttt{trace-mutants} GitHub repository.
+	\section{Contribution}
+		Coverage criteria is necessary when testing all but the most trivial software. Coverage critera can however be difficult to decide upon for complicated systems. Software developers and testers are often faced with the task of testing software. This can be error-prone and time consuming, making testing a useful target for automation.
 
-	\subsection{Testing mutants}
-	\label{ref:method_testing}
+		In this study, we modeled a case study using \Rebeca and employed model checking to ascertain that the model is faithful to the specification. Following this, we generated the state space of the model and extracted (random) traces through the graph. Although employing some heuristics for which traces are extracted would have been nice, this has been left as future work. The extracted traces were transformed into test cases for the SUT.
+
+		We used \citeauthor{mujava} to generate mutants for the SUT. Each mutant was evaluated by the test cases in an attempt to find mutants that could not be killed. These mutants act as the coverage criteria for the randomly generated traces.
+
+	\section{Related Work}
+	TODO!
 		
+	\section{Method}
+		\subsection{Modeling the System Under Test}
+			The case study intended as the SUT is the NASA GMSEC Message Bus, the specification of which was provided by \citeauthor{fraunhofer}. The model of the system was implemented as a \texttt{reactiveclass} in \Rebeca. Simply modeling the SUT as a \texttt{reactiveclass} was not sufficient for our purposes \-- the system is reactive and as such requires inputs from external entities to avoid idling. For this reason, a \texttt{reactiveclass} modeling a user of the SUT was implemented, non-deterministically sending messages to the SUT. To avoid a combinatorial explosion in generating the state space, the amount of messages sent must have a reasonably low upper bound \-- 20 was selected for this study.
 
-\section{Results}
-	Oh Noes!
+			It should be noted that an actual implementation of the SUT was not used in this study. Instead, the model was re-implemented as a Java class following the specification of the system\footnote{Using this approach proved to be quite useful. We were able to pinpoint an error in the model due to incorrect handling of an edge case which was correct in the implementation (which our properties for model checking did not cover). Although a complete implementation should also catch this, using the complete implementation increases the complexity of the project and reduces the amount of time that could be dedicated solely to the research topic at hand. }. This was done for a few reasons, notably giving control over used frameworks to the researchers and to double-check that the model is faithful to the specification. The SUT implementation was implemented as a Akka Java actor, as the Akka Testkit framework provides excellent tools to test actor based systems.
 
-\section{Discussion}
-	Bar!
+		\subsection{Coverage Criteria}
+			\label{sec:coveragecrit}
+			Due to temporal constraints on the study, the coverage criteria for the generated test cases was set at 1000 random traces extracted from the state space of the model, in which only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation). The state space of the model was exported from Afra (\Rebeca IDE) as an \texttt{.aut}
+			\footnote{ALDEBARAN/\textit{AUTomaton} file format. Specification: \texttt{http://www.inrialpes.fr/vasy/cadp/man/aut.html\#sect2}} file suitable for visualization with software such as CADP.
 
-\section{Conclusion}
-	Foo!
+		\subsection{Generating Test Cases}
+			\label{sec:method_testgen}
+			\subsubsection{Abstract Test Cases}
+				\label{sec:method_abstract}
+				Random traces were extracted from the state space. The traces act as abstract test cases for the SUT, as the behavior of an actor based model to an outside observer can be fully modeled based only on the messages that are being sent between actors.
+
+				In order to extract individual traces from the \Rebeca model, we implemented simple Java software to create a graph of the state space based on an \texttt{.aut} file as input, with the output being a list of traces through the graph. Branching decisions in the state space were made at random. The traces extracted from the state space are then used as abstract test cases.
+				The code can be found in the \texttt{trace-extract} package of the \texttt{trace-mutants} GitHub repository. \nocite{trace-mutants}
+
+			\subsubsection{Concrete Test Cases}
+				\label{sec:method_concrete}
+				The \texttt{trace-extract} package also includes a Java class for transforming the abstract test cases to concrete test cases. The \texttt{TestGenerator} class generates a Scala test spec for the Akka Testkit framework\footnote{The \texttt{TestGenerator} class hard-codes the messages that should be sent and received by the SUT as a result of fast prototyping, but the code is available on GitHub}.
+
+		\subsection{Mutant Generation}
+			\label{sec:method_mutgen}
+			Mutants were generated using the muJava \citet{mujava} mutation system for Java programs. Some slight modifications were made to the source code of muJava to facilitate mutant compilation.The artifacts of the modifications are available in the \texttt{gen-mutants} package of the \texttt{trace-mutants} GitHub repository. Every available mutant operator was applied to the original source, generating a total of 316 mutants.
+
+		\subsection{Test Case Evaluation}
+			\label{sec:method_testing}
+			The test cases can be evaluated with the \texttt{evaluate-mutants} package of the \texttt{trace-mutants} GitHub repository. \texttt{evaluate-mutants} uses the file system to set up individual environments for each mutant to be compiled and tested in and then uses \citeauthor{sbt} to execute the test cases.
+
+			The result of a test case evaluation can give different information depending on the results. \\
+			If all mutants are killed, either:
+				\begin{itemize}
+					\item The coverage of the test suite is insufficient; or
+					\item The SUT conforms to the model and the test suite satisfies the coverage criteria.
+				\end{itemize}
+			Otherwise:
+				\begin{itemize}
+					\item There is a bug in the SUT, representative of a mutant that was not killed; or
+					\item There is a discrepancy between the SUT and the model.
+				\end{itemize}
+
+	\section{Results}
+		Although muJava attempted to generate 356 mutants, only 316 mutants of our implementation of the SUT could be compiled. 277 of those mutants modified the \texttt{onReceive(Object message)} method whereas 79 modified other parts of the program, including the message constructors and the overloaded \texttt{boolean equals(Object other)} methods.
+
+		We found that 50 random traces from the state space did not generate a sufficiently diverse set of traces to reliably kill all mutants.
+		In one run, 5 mutants survived the 50 randomly chosen traces: \texttt{COR\_21, ODL\_33, SDL\_17, SDL\_19, VDL\_14}. The \texttt{SDL} mutants modified the \texttt{boolean equals(Object other)} method whereas the other mutants modified the \texttt{onReceive(Object message)} method. \texttt{ODL\_33} and \texttt{VDL\_13} resulted in the same mutation (removing a predicate from an \texttt{OR} conditional) whereas \texttt{COR\_21} replaced the \texttt{OR} operator to an \texttt{AND} operator.
+
+		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage, it was decided to generate 1000 random traces. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness.
+
+		We were able to find one bug discrepancy between the model and the implementation, in which an edge case was being handled incorrectly in the model but correctly in the implementation. This demonstrates at least some usefulness with our method.
+
+	\section{Discussion}
+		Bar!
+
+	\section{Conclusion}
+		Foo!
+
+	\section{Future Work}
+		%TODO
+		TODO: Mention that a complete implementation should be used instead of a mock!
+
 
 \bibliography{references}
 
