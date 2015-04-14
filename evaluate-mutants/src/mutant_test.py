@@ -51,15 +51,17 @@ def test_single_mutant(path):
 
     logfile = os.path.join(path, 'log.txt')
 
-    cmd = ['sbt', 'test']
+    cmd = ['test_mutant.sh', path]
     try:
         with open(logfile, 'w') as log:
-            ret = subprocess.check_call(cmd, stdout=log, stderr=log, cwd=path)
+            ret = subprocess.check_call(cmd, stdout=log, stderr=log)
     except subprocess.CalledProcessError, e:
         ret = e.returncode
 
 #    os.chdir(cwd)
     resfile = os.path.join('testenvs', 'results', '{0}_'.format(os.path.split(path)[1]))
+    if 'original' in resfile:
+        resfile = resfile.replace('/results','')
     if ret == 0:
         resfile += 'ALIVE'
     else:
@@ -106,7 +108,7 @@ def test_original(template, target):
             except Exception, e:
                 print e
         shutil.copytree(template, odir)
-        shutil.copyfile(target, os.path.join(odir, target))
+        shutil.copyfile(target, os.path.join(odir, "src/main/java", target))
     except:
         print 'Unexpected error: ', sys.exc_info()[0]
         raise
