@@ -13,7 +13,7 @@ mkdir -p $outdir
 
 # scala paths
 sdir="scala/bin"
-jdir="java"
+jdir="java/bin"
 
 # compile the mutant
 $jdir/javac -cp "$jcp" "$1/src/main/java/JBus.java" -d $outdir || exit 2
