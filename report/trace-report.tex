@@ -43,8 +43,6 @@
 
 		Mutation testing is used to design new software tests and evaluate the quality of existing software tests. It involves creating \textit{mutants} modified versions of the SUT that are based on \textit{mutation operators}. Each mutant $m \in M$ where $M$ is the set of mutants for a given artifact will lead to a test requirement\footnote{Criterion 5.32 on Mutation Coverage} and yields more test requirements than any other test criterion in most situations (provided that the mutation operators are well-designed). In practise, if software contains a fault, there will usually be a set of mutantns that can only be killed by a test case that also detects that fault \citep{ammann2008introduction}.
 
-
-
 	\section{Contribution}
 		Coverage criteria is necessary when testing all but the most trivial software. Coverage critera can however be difficult to decide upon for complicated systems. Software developers and testers are often faced with the task of testing software. This can be error-prone and time consuming, making testing a useful target for automation.
 
@@ -103,22 +101,24 @@
 		Although muJava attempted to generate 356 mutants, only 316 mutants of our implementation of the SUT could be compiled. 277 of those mutants modified the \texttt{onReceive(Object message)} method whereas 79 modified other parts of the program, including the message constructors and the overloaded \texttt{boolean equals(Object other)} methods.
 
 		We found that 50 random traces from the state space did not generate a sufficiently diverse set of traces to reliably kill all mutants.
-		In one run, 5 mutants survived the 50 randomly chosen traces: \texttt{COR\_21, ODL\_33, SDL\_17, SDL\_19, VDL\_14}. The \texttt{SDL} mutants modified the \texttt{boolean equals(Object other)} method whereas the other mutants modified the \texttt{onReceive(Object message)} method. \texttt{ODL\_33} and \texttt{VDL\_13} resulted in the same mutation (removing a predicate from an \texttt{OR} conditional) whereas \texttt{COR\_21} replaced the \texttt{OR} operator to an \texttt{AND} operator.
+		In one run, 5 mutants survived the 50 randomly chosen traces\footnote{data/0050\_4\_0.traces}: \texttt{COR\_21, ODL\_33, SDL\_17, SDL\_19, VDL\_14}. The \texttt{SDL} mutants modified the \texttt{boolean equals(Object other)} method whereas the other mutants modified the \texttt{onReceive(Object message)} method. \texttt{ODL\_33} and \texttt{VDL\_13} resulted in the same mutation (removing a predicate from an \texttt{OR} conditional) whereas \texttt{COR\_21} replaced the \texttt{OR} operator to an \texttt{AND} operator.
 
-		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage, it was decided to generate 1000 random traces. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness.
+		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage, it was decided to generate 1000 random traces. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness. We also tested 250 traces\footnote{data/0250\_0\_0.traces} with all mutants being killed. Due to the nature of randomness, we felt that it would be better to have too many traces than too few \-- at least until some heuristics are applied to trace extraction.
 
 		We were able to find one bug discrepancy between the model and the implementation, in which an edge case was being handled incorrectly in the model but correctly in the implementation. This demonstrates at least some usefulness with our method.
 
 	\section{Discussion}
-		Bar!
+		TODO: mention SBT problems on parallel distributed file systems
 
 	\section{Conclusion}
 		Foo!
 
 	\section{Future Work}
-		%TODO
-		TODO: Mention that a complete implementation should be used instead of a mock!
+		Despite the contibution to the field made by this study, there is still much research left to be explored. Most notably, the work should be repeated with a complete implementation of a system rather than with an implementation that is quite similar to the model itself. Increased complexity in a system's implementation can introduce hidden side effects that could possibly affect the results of the test cases.
 
+		Furthermore, due to the unexpected issues with \citeauthor{sbt} on parallel distributed file systems, the build system (which acts also as the test runner) should be replaced by a more suitable alternative. This has been done in part, but remains to be tested\footnote{The build system was replaced with a bash script in an effort to allow tests to be run on a high-performance computing cluster, but the cluster was ongoing maintenance and the required tools were out-of-date, if at all present.}.
+
+		A highly desireable improvement on the current work would be to add some sort of heuristics to the selection of traces from the state space of the system. Currently the traces are chosen at random with no guarantees of any actual coverage \-- with actual heuristics in place it will be possible to guarantee some sort of coverage rather than depending on randomness.
 
 \bibliography{references}
 
