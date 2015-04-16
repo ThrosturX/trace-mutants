@@ -1,0 +1,328 @@
+reactiveclass MessageBus(15) {
+	knownrebecs {
+		Attacker att;
+	}
+	
+	statevars {
+		// ATT vars
+		boolean connectionExists;
+		boolean connected;
+		boolean subscribed;
+		int subs;
+		// callbacks and messages
+		int messages;
+		int numCallbackSubscriptions;
+		// other
+		int destroyedMsgs;
+	}
+	
+	msgsrv initial() {
+		connectionExists = false;
+		connected = false;
+		subscribed = false;
+		subs = 0;
+		messages = 0;
+		numCallbackSubscriptions = 0;
+		destroyedMsgs = 0;
+	}
+	
+	msgsrv createConnection() {
+		if (sender == att) {
+			if (!connectionExists)
+			{
+				connectionExists = true;
+				att.ack(1);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv destroyConnection() {
+		if (sender == att) {
+			if (connectionExists)
+			{
+				connected = false; // disconnect
+				numCallbackSubscriptions = 0; // delete subscriptions
+				subscribed = false;	// delete subscriptions
+				destroyedMsgs += messages;
+				messages = 0;	// delete messages
+				connectionExists = false; // destroy connection object
+				att.ack(2);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv connect() {
+		if (sender == att) {
+			if (connectionExists && !connected)
+			{
+				connected = true;
+				att.ack(3);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv disconnect() {
+		if (sender == att) {
+			if (connected)
+			{
+				connected = false;
+				att.ack(4);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv subscribe() {
+		if (sender == att) {
+			if (subs < 2)
+			{
+				subs = subs + 1;
+			}
+			if (connected && !subscribed)
+			{
+				subscribed = true;
+				att.ack(5);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv subscribeCallback() {
+		if (sender == att) {
+			if (connected && numCallbackSubscriptions < 10)
+			{
+				numCallbackSubscriptions += 1;
+				att.ack(7);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv unsubscribe() {
+		if (sender == att) {
+			if (subs >= 0)
+			{
+				subs = subs - 1;
+			}
+			if (connected && subscribed)
+			{
+				subscribed = false;
+				att.ack(6);
+			} else if (connected && numCallbackSubscriptions > 0) {
+				if (subs < 2)
+				{
+					subs = subs + 1;
+				}
+				att.ack(6);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+			
+			if (connected) {
+				// delete all callbacks unconditionally
+				numCallbackSubscriptions = 0;		// what if we are not connected?
+			} 
+		}
+	}
+	
+	msgsrv unsubscribeCallback() {
+		if (sender == att) {
+			if (connected && numCallbackSubscriptions > 0)
+			{
+				numCallbackSubscriptions -= 1;
+				att.ack(8);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv publish() {
+		if (sender == att) {
+			if (connected)
+			{
+				if (subscribed || numCallbackSubscriptions > 0) {
+					messages += 1; // add the message to the queue
+					
+					int i; // invoke callback function for each subscription
+					for (i = 0; i < numCallbackSubscriptions; i = i + 1)
+					{
+						att.callback();
+					}
+				}
+				att.ack(9);
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+	
+	msgsrv getMessage() {
+		if (sender == att) {
+			if (connected && messages > 0)
+			{
+				att.receive();
+				messages -= 1;
+			}
+			else
+			{
+				att.fail(); // error
+			}
+		}
+	}
+}
+
+// the Attacker is basically just a "dumb" app that doesn't follow the API properly
+// its purpose is to try to find counterexamples to the properties
+reactiveclass Attacker(32) {
+	knownrebecs {
+		MessageBus bus;
+	}
+	
+	statevars {
+		int connected;	// 0 = disconnected; 1 = connected; 2 = connecting
+		int rMsgs;		// 'received'/processed messages
+		int rCallbacks; // # of invoked callbacks
+		int cSubs;		// # of callback subscriptions (owned)
+		int published; 	// # of published messages
+		int acks;
+		boolean stop;
+		boolean hasUnsubscribed;
+	}
+	
+	msgsrv initial() {
+		connected = 0;
+		rMsgs = 0;
+		rCallbacks = 0;
+		cSubs = 0;
+		published = 0;
+		acks = 0;
+		stop = false;
+		hasUnsubscribed = false;
+		self.ack(0);
+		self.crazy(-1); // continue after failures
+	}
+	
+	msgsrv receive() {
+		rMsgs += 1;
+	}
+	
+	msgsrv callback() {
+		rCallbacks += 1;
+	}
+	
+	// this message server receives success codes and simulates a ridiculous test-run
+	// this server only receives ACCEPT acknowledgements, the ID specifies what action succeeded
+	msgsrv ack(int id) {
+		acks = acks + 1;
+		if (acks > 20) { // only simulate 20 "stupid" steps
+			stop = true;
+		}
+		
+		// handle changes
+		if (id == 1) {
+			connected = 2;
+		} else if (id == 2 | id == 4) {
+			connected = 0;
+		} else if (id == 3) {
+			connected = 1;
+		}
+		
+		if (id == 0) {			// used to activate command chain
+			connected = 2;
+			bus.createConnection();
+		} else if (id == 9) {	// published
+			published += 1;
+			self.idle();
+		} else if (!stop) {
+			int old = id;
+			self.crazy(old);
+		} else if (stop && connected == 0 && (id == 2 || id == -1)) {
+			self.idle();
+		} else if (stop) {
+			hasUnsubscribed = true;
+			bus.destroyConnection();
+		} else {
+			self.idle();
+		}
+	}
+	
+	// try something else
+	msgsrv fail() {
+		acks = acks + 1;
+		if (acks < 20) {
+			self.crazy(-1);
+		} else {
+			self.idle();
+		}
+	}
+	
+	// performs a random action
+	msgsrv crazy(int old) {
+		int id;
+
+		id = ?(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+		if (id == 0) {
+			bus.createConnection();
+		} else if (id == 1) {	// connection object created 
+			bus.connect();	
+		} else if (id == 2) {
+			if (old == 2) {
+				stop = true;
+			}
+		} else if (id == 3) {	
+			bus.subscribe();
+		} else if (id == 4) {	
+			hasUnsubscribed = true; // destroying the connection loses subscriptions
+			bus.destroyConnection();
+		} else if (id == 5) {	
+			bus.publish();
+		} else if (id == 6) {	
+			bus.disconnect();
+		} else if (id == 7) {	
+			bus.unsubscribeCallback();
+		} else if (id == 8) {
+			hasUnsubscribed = true;
+			bus.unsubscribe();
+		} else if (id == 9) {
+			bus.subscribeCallback();
+		}
+	}
+	
+	msgsrv idle() {
+		self.idle();
+	}
+}
+
+main {
+	MessageBus bus(att):();
+	Attacker att(bus):();
+}
