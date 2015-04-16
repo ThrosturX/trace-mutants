@@ -25,6 +25,10 @@
 	breaklines=true,
 	tabsize=2,
 }
+\lstdefinestyle{traces}{
+	breaklines=true,
+	tabsize=2,
+}
 
 \title{Heuristics for generating abstract test cases from \Rebeca model}
 \author{Þröstur Thorarensen (throstur11@ru.is)}
@@ -48,7 +52,7 @@
 
 		Since we cannot test software with all inputs, \textbf{coverage criteria} are used to decide which test inputs to use. The software testing community believes that effective use of coverage criteria makes it more likely that test engineers will find faults in a program and provides informal assurance that the software is of high qualityand reliability. 
 
-		Mutation testing is used to design new software tests and evaluate the quality of existing software tests. It involves creating \textit{mutants} modified versions of the SUT that are based on \textit{mutation operators}. Each mutant $m \in M$ where $M$ is the set of mutants for a given artifact will lead to a test requirement\footnote{Criterion 5.32 on Mutation Coverage} and yields more test requirements than any other test criterion in most situations (provided that the mutation operators are well-designed). In practise, if software contains a fault, there will usually be a set of mutantns that can only be killed by a test case that also detects that fault \citep{ammann2008introduction}.
+		Mutation testing is used to design new software tests and evaluate the quality of existing software tests. It involves creating \textit{mutants} modified versions of the SUT that are based on \textit{mutation operators}. Each mutant $m \in M$ where $M$ is the set of mutants for a given artifact will lead to a test requirement\footnote{Criterion 5.32 on Mutation Coverage} and yields more test requirements than any other test criterion in most situations (provided that the mutation operators are well-designed). In practise, if software contains a fault, there will usually be a set of mutants that can only be killed by a test case that also detects that fault \citep{ammann2008introduction}.
 
 	\section{Contribution}
 		Coverage criteria is necessary when testing all but the most trivial software. Coverage critera can however be difficult to decide upon for complicated systems. Software developers and testers are often faced with the task of testing software. This can be error-prone and time consuming, making testing a useful target for automation.
@@ -58,7 +62,7 @@
 		We used \citeauthor{mujava} to generate mutants for the SUT. Each mutant was evaluated by the test cases in an attempt to find mutants that could not be killed. These mutants act as the coverage criteria for the randomly generated traces.
 
 	\section{Related Work}
-	TODO!
+		\citet{ammann2008introduction} go into great detail in explaining the basics of software testing, covering concepts used in this research such as coverage criteria and mutants. Furthermore, \citeauthor{mujava} have developed an excellent tool for Java for generating mutants, which lead to test requirements for syntax-based coverage criteria.
 		
 	\section{Method}
 		\subsection{Modeling the System Under Test}
@@ -68,7 +72,7 @@
 
 		\subsection{Coverage Criteria}
 			\label{sec:coveragecrit}
-			The coverage criteria for the test suite generated in this research is the set of all mutants that must be killed. Recall that \textit{Criterion 5.32} in \citet{ammann2008introduction} states that each mutant $m \in M$ where $M$ is the set of mutants for a given artifact will lead to a test requirement \-- each test requirement produced by the elements in $M$ is a part of our coverage criteria.
+			The coverage criteria for the test suite generated in this research is the set of all mutants that must be killed. Mutation testing is a kind of syntax-based testing, where the coverage criteria is the syntactic description of a software artifact. Recall that \textit{Criterion 5.32} in \citet{ammann2008introduction} states that each mutant $m \in M$ where $M$ is the set of mutants for a given artifact will lead to a test requirement \-- each test requirement produced by the elements in $M$ is a part of our coverage criteria.
 			The test suite consists of a tuple $(M, T)$, where $T$ is a list\footnote{It would be more useful to have a \textit{set} of traces, but since randomness does not guarantee uniqueness, we will make do with a list.} of traces. Only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation). The state space of the model was exported from Afra (\Rebeca IDE) as an \texttt{.aut}
 			\footnote{ALDEBARAN/\textit{AUTomaton} file format. Specification: \texttt{http://www.inrialpes.fr/vasy/cadp/man/aut.html\#sect2}} file suitable for visualization with software such as CADP.
 
@@ -113,16 +117,17 @@
 		We found that 50 random traces from the state space did not generate a sufficiently diverse set of traces to reliably kill all mutants.
 		In one run, 5 mutants survived the 50 randomly chosen traces\footnote{data/0050\_4\_0.traces}: \texttt{COR\_21, ODL\_33, SDL\_17, SDL\_19, VDL\_14}. The \texttt{SDL} mutants modified the \texttt{boolean equals(Object other)} method whereas the other mutants modified the \texttt{onReceive(Object message)} method. \texttt{ODL\_33} and \texttt{VDL\_13} resulted in the same mutation (removing a predicate from an \texttt{OR} conditional) whereas \texttt{COR\_21} replaced the \texttt{OR} operator to an \texttt{AND} operator.
 
-		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness. We also tested 250 traces\footnote{data/0250\_0\_0.traces} with all mutants being killed. Due to the nature of randomness, we cannot guarantee that any number of traces will invariantly kill all mutants (provided that killing all mutants is at all possible) \-- at least not until some heuristics are applied to trace extraction.
+		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness. We also tested 250 traces\footnote{data/0250\_0\_0.traces} with all mutants being killed, while 100 traces\footnote{data/0100\_X\_0.traces} did not prove to be sufficient. Due to the nature of randomness, we cannot guarantee that any number of traces will invariantly kill all mutants (provided that killing all mutants is at all possible) \-- at least not until some heuristics are applied to trace extraction.
 
 		We were able to find one discrepancy between the model and the implementation, in which an edge case was being handled incorrectly in the model but correctly in the implementation. This demonstrates that in order to kill all mutants, it is important that the model and implementation must be faithful to each other. Mutants generated from a correct implementation but an incorrect model are more difficult to kill and create caps in the coverage, just as mutants generated from an incorrect implementation but a correct model.
 
-	\section{Discussion}
-		TODO: mention SBT problems on parallel distributed file systems
+		We encountered some issues with the chosen build tool, \citeauthor{sbt}. It is not well suited for testing on parallel distributed file systems. We therefore replaced the tool with a simple fail-fast build script, which has the potential to increase performance. The performance increase depends on randomness\footnote{When abstract test cases are compiled into concrete test cases, it's possible to split them into batch sizes. This introduces slight overhead for each generated batch but if a mutant fails on the first batch, then the rest will be ignored.}.
 
 
 	\section{Conclusion}
-		The research shows that by modeling a SUT, it is possible to easily create many abstract test cases from the state space of the model. The research does not go into heuristics for selecting the best abstract test cases but uses randomness instead. 
+		The research shows that by modeling a SUT, it is possible to easily create many abstract test cases from the state space of the model. The research does not go into heuristics for selecting the best abstract test cases but uses randomness instead. We found that 50 abstract test cases extracted from the state space of the model did not reliably satisfy the coverage criteria, but larger amounts such as 250 and 1000 managed to satisfy the criteria.
+
+		The goal of using an automatically generated test-suite such as the one demonstrated in this study is to kill all mutants. If all mutants can be killed, then either the SUT conforms to the specifications applied to the model or more test requirements are necessary to detect bugs. A failing test suite will uncover a fault in either the model or implementation.
 
 	\section{Future Work}
 		Despite the contibution to the field made by this study, there is still much research left to be explored. Most notably, the work should be repeated with a complete implementation of a system rather than with an implementation that is quite similar to the model itself. Increased complexity in a system's implementation can introduce hidden side effects that could possibly affect the results of the test cases.
@@ -148,6 +153,14 @@ The \Rebeca model includes two \texttt{rebec}s: the message bus itself and an ap
 \lstinputlisting[style=rebeca]{ext/JBus.java}
 
 The implementation is analogous to the \Rebeca model. Details are omitted but the the implementation and model are faithful to each other. 
+
+%\newpage
+%\section{Data Files}
+%
+%\lstinputlisting[style=traces,caption=data/0050\_4\_0.traces]{data/0050_4_0.traces}
+%
+%\lstinputlisting[style=traces,caption=data/0250\_0\_0.traces]{data/0250_0_0.traces}
+%
 
 \end{appendices}
 
