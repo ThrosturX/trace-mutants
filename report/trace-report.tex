@@ -62,7 +62,10 @@
 		We used \citeauthor{mujava} to generate mutants for the SUT. Each mutant was evaluated by the test cases in an attempt to find mutants that could not be killed. These mutants act as the coverage criteria for the randomly generated traces.
 
 	\section{Related Work}
-		\citet{ammann2008introduction} go into great detail in explaining the basics of software testing, covering concepts used in this research such as coverage criteria and mutants. Furthermore, \citeauthor{mujava} have developed an excellent tool for Java for generating mutants, which lead to test requirements for syntax-based coverage criteria.
+	\citet{DBLP:conf/birthday/SirjaniJ11} discuss \Rebeca after 10 years of experience in analyzing actors. The paper introduces \Rebeca in detail along with explaining the supporting model checking tools. The paper focuses on state-space reduction techniques which may come in handy for future work, along with \citeauthor{tasharofi2014efficient}'s dissertation on efficient testing of non-deterministic actor programs which introduces novel solutions in reducing the number of explored interleavings of a non-deterministic concurrent actor system \citep{tasharofi2014efficient}.
+
+		\citet{ammann2008introduction} go into great detail in explaining the basics of software testing, covering concepts used in this research such as coverage criteria and mutants. Furthermore, \citet{mujava} have developed an excellent tool for Java for generating mutants, which lead to test requirements for syntax-based coverage criteria. The tool, muJava, is used in this research to generate method-level mutants.
+
 		
 	\section{Method}
 		\subsection{Modeling the System Under Test}
@@ -115,9 +118,9 @@
 		Although muJava attempted to generate 356 mutants, only 316 mutants of our implementation of the SUT could be compiled. 277 of those mutants modified the \texttt{onReceive(Object message)} method whereas 79 modified other parts of the program, including the message constructors and the overloaded \texttt{boolean equals(Object other)} methods.
 
 		We found that 50 random traces from the state space did not generate a sufficiently diverse set of traces to reliably kill all mutants.
-		In one run, 5 mutants survived the 50 randomly chosen traces\footnote{data/0050\_4\_0.traces}: \texttt{COR\_21, ODL\_33, SDL\_17, SDL\_19, VDL\_14}. The \texttt{SDL} mutants modified the \texttt{boolean equals(Object other)} method whereas the other mutants modified the \texttt{onReceive(Object message)} method. \texttt{ODL\_33} and \texttt{VDL\_13} resulted in the same mutation (removing a predicate from an \texttt{OR} conditional) whereas \texttt{COR\_21} replaced the \texttt{OR} operator to an \texttt{AND} operator.
+		In one run, 5 mutants survived the 50 randomly chosen traces\footnote{data/0050\_5\_0.traces}: \texttt{COR\_21, ODL\_33, SDL\_17, SDL\_19, VDL\_14}. The \texttt{SDL} mutants modified the \texttt{boolean equals(Object other)} method whereas the other mutants modified the \texttt{onReceive(Object message)} method. \texttt{ODL\_33} and \texttt{VDL\_13} resulted in the same mutation (removing a predicate from an \texttt{OR} conditional) whereas \texttt{COR\_21} replaced the \texttt{OR} operator to an \texttt{AND} operator.
 
-		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness. We also tested 250 traces\footnote{data/0250\_0\_0.traces} with all mutants being killed, while 100 traces\footnote{data/0100\_X\_0.traces} did not prove to be sufficient. Due to the nature of randomness, we cannot guarantee that any number of traces will invariantly kill all mutants (provided that killing all mutants is at all possible) \-- at least not until some heuristics are applied to trace extraction.
+		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness. We also tested 250 traces\footnote{data/0250\_0\_0.traces} with all mutants being killed, while 100 traces\footnote{data/0100\_4\_0.traces} did not prove to be sufficient (4 survivors, the same as for the 50-trace run with the exception of \texttt{COR\_21}). Due to the nature of randomness, we cannot guarantee that any number of traces will invariantly kill all mutants (provided that killing all mutants is at all possible) \-- at least not until some heuristics are applied to trace extraction.
 
 		We were able to find one discrepancy between the model and the implementation, in which an edge case was being handled incorrectly in the model but correctly in the implementation. This demonstrates that in order to kill all mutants, it is important that the model and implementation must be faithful to each other. Mutants generated from a correct implementation but an incorrect model are more difficult to kill and create caps in the coverage, just as mutants generated from an incorrect implementation but a correct model.
 
@@ -129,6 +132,8 @@
 
 		The goal of using an automatically generated test-suite such as the one demonstrated in this study is to kill all mutants. If all mutants can be killed, then either the SUT conforms to the specifications applied to the model or more test requirements are necessary to detect bugs. A failing test suite will uncover a fault in either the model or implementation.
 
+		The results are indicative that certain mutants are less likely to be killed as the number of abstract test cases decreases when compared with other mutants. It might be beneficial to pinpoint these mutants and use them as inexpensive coverage criteria for regression testing. Those mutants could also possibly reveal sensitive areas in the system.
+
 	\section{Future Work}
 		Despite the contibution to the field made by this study, there is still much research left to be explored. Most notably, the work should be repeated with a complete implementation of a system rather than with an implementation that is quite similar to the model itself. Increased complexity in a system's implementation can introduce hidden side effects that could possibly affect the results of the test cases.
 
@@ -136,6 +141,9 @@
 
 		A highly desireable improvement on the current work would be to add some sort of heuristics to the selection of traces from the state space of the system. Currently the traces are chosen at random with no guarantees of any actual coverage \-- with actual heuristics in place it will be possible to guarantee some sort of coverage rather than depending on randomness.
 
+		There seems to be a bias towards specific mutants not being killed even when completely different random traces are used as abstract test cases. It might be useful to explore where this bias comes from and what other information could be hiding in those mutants.
+
+\newpage
 \bibliography{references}
 
 \newpage
@@ -157,7 +165,7 @@ The implementation is analogous to the \Rebeca model. Details are omitted but th
 %\newpage
 %\section{Data Files}
 %
-%\lstinputlisting[style=traces,caption=data/0050\_4\_0.traces]{data/0050_4_0.traces}
+%\lstinputlisting[style=traces,caption=data/0050\_5\_0.traces]{data/0050_5_0.traces}
 %
 %\lstinputlisting[style=traces,caption=data/0250\_0\_0.traces]{data/0250_0_0.traces}
 %
