@@ -36,7 +36,9 @@
 \maketitle
 
 \begin{abstract}
-	Software testing can be a difficult task for humans and is a prime candidate for automation. Concurrent systems are no exception, even when employing paradigms such as the Actor model. Model checking goes a long way to verifying software correctness, but models always abstract away from the implementation. Mutant testing is a promising method to pinpoint programming errors, by combining the abstract model of a system with mutants of the implementation, it is possible to automatically generate an extensive suite of test cases with ease. The research demonstrates that software testing can easily be supplemented by automation and that even the simplistic methods employed in this study are capable of producing reliable results.
+	Software testing can be a difficult task for humans and is a prime candidate for automation. Concurrent systems are no exception, even when employing paradigms such as the Actor model. Model checking goes a long way to verifying software correctness, but models always abstract away from the implementation. Mutant testing is a promising method to pinpoint programming errors, by combining the abstract model of a system with mutants of the implementation, it is possible to automatically generate an extensive suite of test cases with ease. The research demonstrates that software testing can easily be supplemented by automation and that even the simplistic methods employed in this study are capable of producing reliable results. 
+
+	A \Rebeca model was created based on a message busspecification, after which Afra was used to generate the state space as an \texttt{aut} file. Traces were then extracted from the state space to be used as abstract test cases. A test generator converted the abstract test cases into concrete test cases. The actual implementation of the message bus was input into muJava to generate mutants of the message bus. Each concrete test case was executed for every mutant until all mutants could be killed \-- if a mutant passed every test case, it cannot be considered killed, generally revealing a bug.
 \end{abstract}
 
 \newpage
@@ -61,6 +63,14 @@
 
 		We used muJava to generate mutants for the SUT. Each mutant was evaluated by the test cases in an attempt to find mutants that could not be killed. These mutants act as the coverage criteria for the randomly generated traces.
 
+		The goal of testing each mutant is to attempt to uncover a bug in the implementation or a disparity between the implementation and the specification. Figure \ref{fig:flow} depicts the entire process from start to finish, taking a specification and implementation as inputs and returning the results of evaluating each generated mutant with each test case.
+
+\begin{figure}[h!]
+	\includegraphics[width=0.8\textwidth]{data/flow}
+	\caption{Flow chart of the process for validating an implementation based on a specification.}
+	\label{fig:flow}
+\end{figure}
+
 	\section{Related Work}
 	\citet{DBLP:conf/birthday/SirjaniJ11} discuss \Rebeca after 10 years of experience in analyzing actors. The paper introduces \Rebeca in detail along with explaining the supporting model checking tools. The paper focuses on state-space reduction techniques which may come in handy for future work, along with \citeauthor{tasharofi2014efficient}'s dissertation on efficient testing of non-deterministic actor programs which introduces novel solutions in reducing the number of explored interleavings of a non-deterministic concurrent actor system \citep{tasharofi2014efficient}.
 
@@ -71,12 +81,13 @@
 		\subsection{Modeling the System Under Test}
 			The case study intended as the SUT is the NASA GMSEC Message Bus, the specification of which was provided by \citeauthor{fraunhofer}. The model of the system was implemented as a \texttt{reactiveclass} in \Rebeca. Simply modeling the SUT as a \texttt{reactiveclass} was not sufficient for our purposes \-- the system is reactive and as such requires inputs from external entities to avoid idling. For this reason, a \texttt{reactiveclass} modeling a user of the SUT was implemented, non-deterministically sending messages to the SUT. To avoid a combinatorial explosion in generating the state space, the amount of messages sent must have a reasonably low upper bound \-- 20 was selected for this study.
 
-			It should be noted that an actual implementation of the SUT was not used in this study. Instead, the model was re-implemented as a Java class following the specification of the system\footnote{Using this approach proved to be quite useful. We were able to pinpoint an error in the model due to incorrect handling of an edge case which was correct in the implementation (which our properties for model checking did not cover). Although a complete implementation should also catch this, using the complete implementation increases the complexity of the project and reduces the amount of time that could be dedicated solely to the research topic at hand. }. This was done for a few reasons, notably giving control over used frameworks to the researchers and to double-check that the model is faithful to the specification. The SUT implementation was implemented as an Akka Java actor since the Akka Testkit framework provides excellent tools to test actor based systems.
+			It should be noted that an actual implementation of the SUT was not used in this study. Instead, the model was re-implemented as a Java class following the specification of the system. This was done for a few reasons, notably giving control over used frameworks to the researchers and to double-check that the model is faithful to the specification. Using this approach proved to be quite useful. We were able to pinpoint an error in the model due to incorrect handling of an edge case which was correct in the implementation (which our properties for model checking did not cover). Although a complete implementation should also catch this, using the complete implementation increases the complexity of the project and reduces the amount of time that could be dedicated solely to the research topic at hand.  The SUT implementation was implemented as an Akka Java actor since the Akka Testkit framework provides excellent tools to test actor based systems. Of the tools provided by the Akka Testkit, its methods for sending and receiving messages to and from Akka actors are by far the most useful for this study. Relying on open-source software, the Akka Testkit and ScalaTest make it extremely easy to test mutants based on the generated test cases. See section \ref{sec:method_testgen} for more details. The specification of the SUT can be found in appendix \ref{app:bus_spec}.
+
 
 		\subsection{Coverage Criteria}
 			\label{sec:coveragecrit}
 			The coverage criteria for the test suite generated in this research is the set of all mutants that must be killed. Mutation testing is a kind of syntax-based testing, where the coverage criteria is the syntactic description of a software artifact. Recall that \textit{Criterion 5.32} in \citet{ammann2008introduction} states that each mutant $m \in M$ where $M$ is the set of mutants for a given artifact will lead to a test requirement \-- each test requirement produced by the elements in $M$ is a part of our coverage criteria.
-			The test suite consists of a tuple $(M, T)$, where $M$ is the set of mutants and $T$ is a list of traces\footnote{It would be more useful to have a \textit{set} of traces, but since randomness does not guarantee uniqueness, we will make do with a list.}. Only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation). The state space of the model was exported from Afra (\Rebeca IDE) as an \texttt{.aut}
+			The test suite consists of a tuple $(M, T)$, where $M$ is the set of mutants and $T$ is a list of traces\footnote{It would be more useful to have a \textit{set} of traces, but since randomness does not guarantee uniqueness, we can accept using a list.}. Only messages to and from the SUT are considered (all other transitions in the state space are considered as $\tau$ transitions and were discarded from the test case generation). The state space of the model was exported from Afra (\Rebeca IDE) as an \texttt{.aut}
 			\footnote{ALDEBARAN/\textit{AUTomaton} file format. Specification: \texttt{http://www.inrialpes.fr/vasy/cadp/man/aut.html\#sect2}} file suitable for visualization with software such as CADP.
 
 		\subsection{Generating Test Cases}
@@ -88,9 +99,28 @@
 				In order to extract individual traces from the \Rebeca model, we implemented simple Java software to create a graph of the state space based on an \texttt{.aut} file as input, with the output being a list of traces through the graph. Branching decisions in the state space were made at random. The traces extracted from the state space are then used as abstract test cases.
 				The code can be found in the \texttt{trace-extract} package of the \texttt{trace-mutants} GitHub repository. \nocite{trace-mutants}
 
+				Since abstract test cases ase just traces of sent messages, they are in a format representing the receiver and the message. Here is an example:
+			\begin{lstlisting}[style=rebeca]
+			bus:INITIAL-att:ACK-att:CRAZY-bus:CREATECONNECTION-bus:DISCONNECT
+			-att:ACK-att:FAIL-att:CRAZY-att:CRAZY-bus:UNSUBSCRIBECALLBACK
+			-bus:UNSUBSCRIBE-att:FAIL-att:FAIL-att:CRAZY-att:CRAZY
+			-bus:CONNECT-bus:SUBSCRIBE-att:ACK-att:ACK-att:CRAZY-att:CRAZY
+			-bus:DISCONNECT-att:ACK-att:CRAZY-bus:SUBSCRIBECALLBACK
+			-bus:DISCONNECT-att:FAIL-att:FAIL-att:CRAZY-att:CRAZY
+			-bus:CREATECONNECTION-bus:DESTROYCONNECTION-att:FAIL-att:ACK
+			-att:CRAZY-att:CRAZY-bus:PUBLISH-att:FAIL-att:CRAZY
+			-bus:SUBSCRIBECALLBACK-att:FAIL-att:CRAZY-bus:UNSUBSCRIBECALLBACK
+			-att:FAIL-att:CRAZY-bus:CONNECT-att:FAIL-att:CRAZY-bus:PUBLISH
+			-bus:UNSUBSCRIBE-att:FAIL-att:FAIL-att:CRAZY-att:CRAZY
+			-bus:UNSUBSCRIBE-bus:DESTROYCONNECTION-att:FAIL-att:FAIL
+			-att:CRAZY-bus:CREATECONNECTION-att:IDLE-att:ACK
+			-bus:DESTROYCONNECTION-att:IDLE-att:ACK-\end{lstlisting}
+
 			\subsubsection{Concrete Test Cases}
 				\label{sec:method_concrete}
 				The \texttt{trace-extract} package also includes a Java class for transforming the abstract test cases to concrete test cases. The \texttt{TestGenerator} class generates a Scala test spec for the Akka Testkit framework\footnote{The \texttt{TestGenerator} class hard-codes the messages that should be sent and received by the SUT as a result of fast prototyping, but the code is available on GitHub}. The executable test cases are quite simple in nature \-- messages are sent to the SUT and the test environment expects a \texttt{Success} or a \texttt{Failure} message in return. If the test environment receives an unexpected message, the test case is considered as failed\footnote{As discussed in later sections, the goal is to get test cases to fail (hopefully sooner rather than later).}.
+
+				The test cases are mapped from simple traces to a series of messages that should be sent and received correspondingly. The requirement is for the messages to be \textit{sent} in the same order as the traces indicate, but they can be \textit{received} out of order. The mapping can be done dynamically but for this study a \texttt{TestGenerator} was written as a Java class with a hard-coded map to translate elements inside a trace to a send/receive pair.
 
 		\subsection{Mutant Generation}
 			\label{sec:method_mutgen}
@@ -116,8 +146,10 @@
 					\item There is a discrepancy between the SUT and the model.
 				\end{itemize}
 
+		We encountered some issues with the chosen build tool, \citeauthor{sbt}. It is not well suited for testing on parallel distributed file systems as it requires file system locking, a feature that is not generally present on file systems residing on networked storage. We therefore replaced the tool with a simple fail-fast build script, which has the potential to increase performance. The performance increase depends on randomness\footnote{When abstract test cases are compiled into concrete test cases, it's possible to split them into batch sizes. This introduces slight overhead for each generated batch but if a mutant fails on the first batch, then the rest will be ignored.}.
+
 	\section{Results}
-		Although muJava attempted to generate 356 mutants, only 316 mutants of our implementation of the SUT could be compiled. 277 of those mutants modified the \texttt{onReceive(Object message)} method whereas 79 modified other parts of the program, including the message constructors and the overloaded \texttt{boolean equals(Object other)} methods.
+	Although muJava attempted to generate 356 mutants, only 316 mutants of our implementation of the SUT could be compiled\footnote{This is a limitation in muJava, every single mutant that muJava could generate was generated.}. 277 of those mutants modified the \texttt{onReceive(Object message)} method whereas 79 modified other parts of the program, including the message constructors and the overloaded \texttt{boolean equals(Object other)} methods.
 
 		We found that 50 random traces from the state space did not generate a sufficiently diverse set of traces to reliably kill all mutants.
 		In one run, 5 mutants survived the 50 randomly chosen traces\footnote{data/0050\_5\_0.traces}: \texttt{COR\_21, ODL\_33, SDL\_17, SDL\_19, VDL\_14}. The \texttt{SDL} mutants modified the \texttt{boolean equals(Object other)} method whereas the other mutants modified the \texttt{onReceive(Object message)} method. \texttt{ODL\_33} and \texttt{VDL\_13} resulted in the same mutation (removing a predicate from an \texttt{OR} conditional) whereas \texttt{COR\_21} replaced the \texttt{OR} operator to an \texttt{AND} operator.
@@ -125,9 +157,6 @@
 		Similar results were encountered during development of the test framework. Since randomness plays such a large part in determining whether or not a set of traces through the state space graph provides adequate coverage. We found that generating 1000 traces resulted in all mutants being killed every time, although theoretically it is of course always possible to generate unhelpful test cases when using randomness. We also tested 250 traces\footnote{data/0250\_0\_0.traces} with all mutants being killed, while 100 traces\footnote{data/0100\_4\_0.traces} did not prove to be sufficient (4 survivors, the same as for the 50-trace run with the exception of \texttt{COR\_21}). Due to the nature of randomness, we cannot guarantee that any number of traces will invariantly kill all mutants (provided that killing all mutants is at all possible) \-- at least not until some heuristics are applied to trace extraction.
 
 		We were able to find one discrepancy between the model and the implementation, in which an edge case was being handled incorrectly in the model but correctly in the implementation. This demonstrates that in order to kill all mutants, it is important that the model and implementation be faithful to each other. Mutants generated from a correct implementation but an incorrect model are more difficult to kill and create gaps in the coverage, as do mutants generated from an incorrect implementation but a correct model.
-
-		We encountered some issues with the chosen build tool, \citeauthor{sbt}. It is not well suited for testing on parallel distributed file systems as it requires file system locking, a feature that is not generally present on file systems residing on networked storage. We therefore replaced the tool with a simple fail-fast build script, which has the potential to increase performance. The performance increase depends on randomness\footnote{When abstract test cases are compiled into concrete test cases, it's possible to split them into batch sizes. This introduces slight overhead for each generated batch but if a mutant fails on the first batch, then the rest will be ignored.}.
-
 
 	\section{Conclusion}
 		The research shows that by modeling a SUT, it is possible to easily create many abstract test cases from the state space of the model. The research does not go into heuristics for selecting the best abstract test cases but uses randomness instead. We found that 100 abstract test cases extracted from the state space of the model did not reliably satisfy the coverage criteria, but larger amounts such as 250 and 1000 managed to satisfy the criteria.
@@ -139,17 +168,56 @@
 	\section{Future Work}
 		Despite the contibution to the field made by this study, there is still much research left to be explored. Most notably, the work should be repeated with a complete implementation of a system rather than with an implementation that is deliberately nearly identical to the model itself. Increased complexity in a system's implementation can introduce hidden side effects that could possibly affect the results of the test cases.
 
-		Furthermore, due to the unexpected issues with \citeauthor{sbt} on parallel distributed file systems, the build system (which acts also as the test runner) should be replaced by a more suitable alternative. This has been done in part, but remains to be tested on distributed systems\footnote{The build system was replaced with a bash script in an effort to allow tests to be run on a high-performance computing cluster, but the cluster was ongoing maintenance and the required tools were out-of-date, if at all present.}.
+		Furthermore, due to the unexpected issues with \citeauthor{sbt} on parallel distributed file systems (as detailed at the end of section \ref{sec:method_testing}), the build system (which acts also as the test runner) should be replaced by a more suitable alternative. This has been done in part, but remains to be tested on distributed systems\footnote{The build system was replaced with a bash script in an effort to allow tests to be run on a high-performance computing cluster, but the cluster was ongoing maintenance and the required tools were out-of-date, if at all present.}.
 
 		A highly desireable improvement on the current work would be to add some sort of heuristics to the selection of traces from the state space of the system. Currently the traces are chosen at random with no guarantees of any actual coverage \-- with actual heuristics in place it will be possible to guarantee some sort of coverage rather than depending on randomness.
 
 		There seems to be a bias towards specific mutants not being killed even when completely different random traces are used as abstract test cases. It might be useful to explore where this bias comes from and what other information could be hiding in those mutants.
+
+		The most computationally intensive (or at least time-consuming on the hardware this study was performed on) was compiling and running each test case for each mutant. Killing the mutants can be optimized by generating better test case heuristics, even if the test cases are simply re-ordered. The mutants themselves can also be reordered to achieve increased performance since each mutant should be able to uncover a bug (and a bug can often lead to other bugs) -- by examining the first failing mutant immediately it should be achievable to patch the bug before the test cases have fully terminated. This of course would work best if any mutants with more bias are tested first. Finally, it may also be helpful to discard any test cases that provably can not kill mutants (or if they are extremely unlikely to do so, save them for last -- even save them for a final validation).
 
 \newpage
 \bibliography{references}
 
 \newpage
 \begin{appendices}
+
+\section{Bus Specification}
+\label{app:bus_spec}
+
+The specification of the SUT specifies the following methods:
+\begin{itemize}
+	\item createConnection:
+	\\	precondition:  no other connection objects can exist
+	\\	postcondition: a new connection exists
+	\item destroyConnection
+	\\	precondition:  a connection object must exist
+	\\	postcondition: the connection object is destroyed -- any subscriptions and messages are deleted
+	\item connect
+	\\	precondition:  a connection object must exist
+	\\	postcondition: a connection has been established
+	\item disconnect
+	\\	precondition:  a connection must be established
+	\\	postcondition: the connection has been broken -- (subscriptions and messages are not deleted)
+	\item subscribe
+	\\	precondition:  a connection must be established and no other subscriptions can exist
+	\\	postcondition: a subscription has been created
+	\item subscribeCallback
+	\\	precondition:  a connection must be established and the number of callback subscriptinos must not exceed 10
+	\\	postcondition: a callback subscription has been created
+	\item unsubscribe
+	\\	precondition:  a subscription must exist and a connection must be established
+	\\	postcondition: all subscriptions have been removed
+	\item unsubscribeCallback
+	\\	precondition:  a callback subscription must exist and a connection must be established
+	\\	postcondition: a single callback subscription has been removed
+	\item publish
+	\\	precondition:  a connection must be established
+	\\	postcondition: a message has been published (into a message queue)
+	\item getMessage
+	\\	precondition:  a connection must be established and a message must exist in the queue
+	\\	postcondition: a message has been removed from the queue and sent to the caller
+\end{itemize}
 
 \section{\Rebeca Model - Full Code}
 
